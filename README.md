@@ -1,2 +1,2 @@
-# Wikipedia-Analysor
+# Wikipedia Analysor
 Insights on the edits and data within Wikipedia
