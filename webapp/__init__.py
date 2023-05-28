@@ -1,40 +1,12 @@
-# Import packages
-import hashlib
-
-from dash import Dash, html, dash_table, dcc, callback, Output, Input, State
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import dash_bootstrap_components as dbc
 import json
 
-LANGS = {
-    "fr": "Français",
-    "en": "English",
-    "de": "Deutsch",
-    "it": "Italiano"
-}
+import pandas as pd
+from dash import Dash, html, dcc, Output, Input, State, dash_table
+import dash_bootstrap_components as dbc
+from plotly import graph_objects as go, express as px
 
-
-# https://stackoverflow.com/a/1094933
-def sizeof_fmt(num, suffix="B"):
-    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
-        if abs(num) < 1024.0:
-            return f"{num:3.1f}{unit}{suffix}"
-        num /= 1024.0
-    return f"{num:.1f}Yi{suffix}"
-
-
-def get_color(lang):
-    m = hashlib.sha256()
-    m.update(lang.encode())
-    return f"#{m.hexdigest()[:6]}"
-
-
-# Incorporate data
-with open("samples/all.json", "r") as f:
-    DATA = json.load(f)
-    people = list(DATA.keys())
+from webapp.data import PEOPLE, DATA
+from webapp.helpers import LANGS, get_color
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
@@ -56,8 +28,8 @@ app.layout = dbc.Container(
                 dbc.Col(
                     dcc.Dropdown(
                         id="person",
-                        options=people,
-                        value=people[0],
+                        options=PEOPLE,
+                        value=PEOPLE[0],
                         clearable=False,
                     ),
                     width={"size": 6, "offset": 0},
@@ -255,7 +227,3 @@ def update_graph(selected_person, selected_langs):
     )
 
     return fig_main, {'display': 'inline'}
-
-
-if __name__ == "__main__":
-    app.run_server(debug=True)
