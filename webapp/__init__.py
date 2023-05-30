@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 import pandas as pd
@@ -6,7 +7,7 @@ import dash_bootstrap_components as dbc
 from plotly import graph_objects as go, express as px
 
 from webapp.data import PEOPLE, DATA
-from webapp.helpers import LANGS, get_color
+from webapp.helpers import LANGS, get_color, sizeof_fmt
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
@@ -143,13 +144,49 @@ def update_by_lang(selected_person, selected_langs):
 
         # Contributions table
         data = cur_data[lang]["contributions"]["items"]
-        columns = [{"name": i, "id": i} for i in data[0].keys()]
+
+        for d in data:
+            d.update(
+                {
+                    "timestamp": datetime.fromisoformat(d["timestamp"].replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M"),
+                    "username": d["username"],
+                    "size": sizeof_fmt(d["size"]),
+                }
+            )
+
+        columns = [
+            {
+                "name": "Timestamp (UTC)",
+                "id": "timestamp",
+            },
+            {
+                "name": "Username or IP address",
+                "id": "username",
+            },
+            {
+                "name": "Resulting size",
+                "id": "size",
+            },
+        ]
         table = dbc.Card(
             [
                 dbc.CardHeader(f"List of contributions"),
                 dbc.CardBody(
                     [
-                        dash_table.DataTable(id=f"table-{lang}", data=data, columns=columns),
+                        dash_table.DataTable(
+                            id=f"table-{lang}",
+                            data=data,
+                            columns=columns,
+                            sort_action='native',
+                            filter_action='native',
+                            page_size=10,
+                            style_cell_conditional=[
+                                {'if': {'column_id': 'timestamp'},
+                                 'width': '40%'},
+                                {'if': {'column_id': 'username'},
+                                 'width': '40%'},
+                            ],
+                        ),
                     ],
                 ),
             ],
