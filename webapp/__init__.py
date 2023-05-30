@@ -145,14 +145,17 @@ def update_by_lang(selected_person, selected_langs):
         # Contributions table
         data = cur_data[lang]["contributions"]["items"]
 
-        for d in data:
-            d.update(
-                {
-                    "timestamp": datetime.fromisoformat(d["timestamp"].replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M"),
-                    "username": d["username"],
-                    "size": sizeof_fmt(d["size"]),
-                }
-            )
+        try:
+            for d in data:
+                d.update(
+                    {
+                        "timestamp": datetime.fromisoformat(d["timestamp"].replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M"),
+                        "username": d["username"],
+                        "size": sizeof_fmt(d["size"]),
+                    }
+                )
+        except TypeError:  # Already done
+            pass
 
         columns = [
             {
