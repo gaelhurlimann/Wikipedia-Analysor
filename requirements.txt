@@ -10,3 +10,5 @@ pre-commit
 pre-commit-hooks
 pylint
 requests
+pyphen
+nltk
