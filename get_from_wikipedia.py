@@ -5,6 +5,9 @@ import datetime
 import json
 from collections import Counter
 
+from readability import stats, flesch, flesch_kincaid, automated_readability_index, smog_grade, coleman_liau_index, \
+    gunning_fog_index
+
 # URLs
 URL_INFOS = "https://{lang}.wikipedia.org/w/api.php"
 URL_STATS = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{lang}.wikipedia/{access}/{agent}/{uri_article_name}/{granularity}/{start}/{end}"
@@ -31,7 +34,7 @@ ACCESS = "all-access"
 AGENTS = "all-agents"
 GRANULARITY = "daily"
 
-VERBOSE = False
+VERBOSE = True
 
 DEFAULT_LANGS = ["en", "fr", "de"]
 TARGET_DURATION = DEFAULT_DURATION
@@ -224,7 +227,7 @@ def fetch_backlinks(queries):
                 if "query" in data and "backlinks" in data["query"]:
                     bldata = data["query"]["backlinks"]
                 else:
-                    obj["error"] = "could not retrieve informations (backlinks)"
+                    obj["error"] = "could not retrieve information (backlinks)"
                     break
 
                 if "backlinks" not in page:
@@ -250,7 +253,7 @@ def fetch_backlinks(queries):
 
 
 def fetch_pageprops_revisions(queries):
-    # Get some of the missing informations
+    # Get some of the missing information
     # https://www.mediawiki.org/wiki/API:Pageprops
     # https://www.mediawiki.org/wiki/API:Revisions
     for name, obj in queries.items():
@@ -281,7 +284,7 @@ def fetch_pageprops_revisions(queries):
                     "user": content["revisions"][0]["user"],
                 }
             else:
-                obj["error"] = "could not retrieve informations (props)"
+                obj["error"] = "could not retrieve information (props)"
 
     if VERBOSE:
         qprint(queries)
@@ -316,7 +319,7 @@ def fetch_contributors(queries, target_contributors=None):
                 if "query" in data and "pages" in data["query"]:
                     pcdata = data["query"]["pages"][str(page["pid"])]
                 else:
-                    obj["error"] = "could not retrieve informations (contributors)"
+                    obj["error"] = "could not retrieve information (contributors)"
                     break
 
                 if "contributors" not in page:
@@ -379,7 +382,7 @@ def fetch_contributions(queries):
                         "pages" in data["query"] and "revisions" in data["query"]["pages"][str(page["pid"])]:
                     rvdata = data["query"]["pages"][str(page["pid"])]["revisions"]
                 else:
-                    obj["error"] = "could not retrieve informations (contributions)"
+                    obj["error"] = "could not retrieve information (contributions)"
                     break
 
                 if "contributions" not in page:
@@ -443,8 +446,74 @@ def fetch_pageviews(queries):
                         "views": item["views"],
                     })
             else:
-                obj["error"] = "could not retrieve informations (pageviews)"
+                obj["error"] = "could not retrieve information (pageviews)"
                 continue
+
+    if VERBOSE:
+        qprint(queries)
+
+    return queries
+
+
+def fetch_text_and_stats(queries):
+    for name, obj in queries.items():
+        if "error" in obj:
+            continue
+
+        for lang, page in obj["langs"].items():
+            excontinue = ""
+            url_full = URL_INFOS.format(lang=lang)
+            params = {
+                "titles": page["name"],
+                "prop": "extracts",
+                "explaintext": 1,
+                "exsectionformat": "plain",
+            }
+
+            while True:
+                if excontinue != "":
+                    params["excontinue"] = excontinue
+
+                results = s.get(url=url_full, params=params)
+                data = results.json()
+                print(data)
+
+                if "query" in data and \
+                        "pages" in data["query"] and "extract" in data["query"]["pages"][str(page["pid"])]:
+                    exdata = data["query"]["pages"][str(page["pid"])]["extract"]
+                else:
+                    obj["error"] = "could not retrieve information (extract)"
+                    break
+
+                if "extract" not in page:
+                    page["extract"] = ""
+
+                if exdata:
+                    page["extract"] += exdata
+
+                if "continue" in data:
+                    excontinue = data["continue"]["excontinue"]
+                else:
+                    break
+
+            if "extract" in page and page["extract"]:
+                _, _, num_words, _, num_sentences = stats(page["extract"], lang)
+                page["stats"] = {
+                    "num_words": num_words,
+                    "num_sentences": num_sentences,
+                }
+                page["readability"] = {
+                    "fres": flesch(page["extract"], lang),
+                    "fkgl": flesch_kincaid(page["extract"], lang),
+                    "ari": automated_readability_index(page["extract"], lang),
+                    "smog": smog_grade(page["extract"], lang),
+                    "cli": coleman_liau_index(page["extract"], lang),
+                    "gfi": gunning_fog_index(page["extract"], lang),
+                }
+                mean = 0
+                for _, score in page["readability"].items():
+                    mean += score
+                page["readability"]["mean"] = mean / len(page["readability"])
 
     if VERBOSE:
         qprint(queries)
@@ -463,6 +532,7 @@ def get_from_wikipedia(target_links, target_langs=None, target_contributors=None
     fetch_contributors(queries, target_contributors)
     fetch_contributions(queries)
     fetch_pageviews(queries)
+    fetch_text_and_stats(queries)
 
     return queries
 
