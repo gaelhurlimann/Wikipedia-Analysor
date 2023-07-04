@@ -121,7 +121,7 @@ def fetch_data(to_find, target_langs=None):
     queries = {}
     for lang, names in to_find.items():
         url_full = URL_INFOS.format(lang=lang)
-        # We group the queries per target lang for less queries
+        # We group the queries per target lang for fewer queries
         titles = "|".join(names)
         params = {
             "titles": titles,
