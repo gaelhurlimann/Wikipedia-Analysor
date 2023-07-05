@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 from urllib.parse import urlparse, unquote, quote
 
@@ -64,9 +64,23 @@ class Queries:
 
     # Limits
     BACKLINKS_LIMIT = GLOBAL_LIMIT
+
     # CONTRIBS_LIMIT = WIKI_LIMIT
 
     def __init__(self, target_links, target_langs=None, verbose=False):
+        self.ATTRIBUTES = {
+            "name": self._fetch_names,
+            "info": self._fetch_info,
+            "creation": self._fetch_info,
+            "length": self._fetch_info,
+            "url": self._fetch_info,
+            "pid": self._fetch_info,
+            "wikibase_item": self._fetch_info,
+            "description": self._fetch_rest_description,
+            "backlinks": self._fetch_backlinks,
+            "revisions": self._fetch_revisions,
+        }
+
         self._verbose = verbose
 
         if target_langs is None:
@@ -124,8 +138,21 @@ class Queries:
             pprint(self._to_find)
 
     @property
-    def attributes(self):
+    def current_attributes(self) -> set:
         return self._attributes
+
+    @property
+    def available_attributes(self) -> set:
+        return set(self.ATTRIBUTES.keys())
+
+    def fetch_attributes(self, *attrs):
+        to_fetch = [self.ATTRIBUTES["name"], self.ATTRIBUTES["info"]]  # We need a basis
+        for attr in attrs:
+            if attr not in to_fetch:  # No duplicate
+                to_fetch.append(self.ATTRIBUTES[attr])
+
+        for fun in to_fetch:
+            fun()  # Fun!
 
     def __getitem__(self, item):
         if item in self.target_langs:
@@ -209,7 +236,8 @@ class Queries:
                     # Add the other target langs
                     if "langlinks" in obj:
                         for langlink in obj["langlinks"]:
-                            if not self.target_langs or langlink["lang"] in self.target_langs:  # Use all langs if no target lang
+                            if not self.target_langs or langlink[
+                                "lang"] in self.target_langs:  # Use all langs if no target lang
                                 self._queries[title]["langs"][langlink["lang"]] = {
                                     "name": langlink["*"]
                                 }
@@ -391,40 +419,59 @@ class Queries:
 
         https://www.mediawiki.org/wiki/API:Revisions
         """
-
         for name, obj in self._queries.items():
             if "error" in obj:
                 continue
 
             for lang, page in obj["langs"].items():
+                rvcontinue = ""
                 url_full = self.URL_INFOS.format(lang=lang)
                 params = {
                     "titles": page["name"],
                     "prop": "revisions",
-                    "rvlimit": 1,
-                    "rvprop": "timestamp|user",
-                    "rvdir": "newer",
+                    "rvprop": "timestamp|user|size",
+                    "rvstart": obj["query"]["timestamp"],
+                    "rvend": (datetime.fromisoformat(obj["query"]["timestamp"]) - timedelta(
+                        days=obj["query"]["duration"])).isoformat(),
+                    "rvdir": "older",  # rvstart has to be later than rvend with that mode
+                    "rvlimit": self.WIKI_LIMIT,
                 }
 
-                results = self._s.get(url=url_full, params=params)
-                data = results.json()
+                while True:
+                    if rvcontinue != "":
+                        params["rvcontinue"] = rvcontinue
 
-                if "query" in data and "pages" in data["query"]:
-                    content = data["query"]["pages"][pid]
-                    pid = next(iter(content))
-                    page["pid"] = int(pid)
-                    content = content[pid]
-                    page["pwikidata"] = content["pageprops"]["wikibase_item"]
-                    page["creation"] = {
-                        "timestamp": content["revisions"][0]["timestamp"],
-                        "user": content["revisions"][0]["user"],
-                    }
-                else:
-                    obj["error"] = "could not retrieve information (pageprops/revisions)"
+                    results = self._s.get(url=url_full, params=params)
+                    data = results.json()
+
+                    if "query" in data and \
+                            "pages" in data["query"] and "revisions" in data["query"]["pages"][str(page["pid"])]:
+                        rvdata = data["query"]["pages"][str(page["pid"])]["revisions"]
+                    else:
+                        obj["error"] = "could not retrieve information (contributions)"
+                        break
+
+                    if "contributions" not in page:
+                        page["contributions"] = {
+                            "items": [],
+                        }
+
+                    if rvdata:
+                        for revision in rvdata:
+                            page["contributions"]["items"].append({
+                                "timestamp": revision["timestamp"],
+                                "username": revision["user"],
+                                "size": revision["size"],
+                            })
+
+                    if "continue" in data:
+                        rvcontinue = data["continue"]["rvcontinue"]
+                    else:
+                        break
 
         if self._verbose:
             print("== Queries: after revisions ==")
-            qprint(queries)
+            qprint(self._queries)
 
         self._attributes.update(["revisions"])
 
@@ -442,6 +489,4 @@ if __name__ == "__main__":
     ]
 
     queries = Queries(target_links, verbose=True)
-    queries._fetch_names()
-    queries._fetch_info()
-    queries._fetch_rest_description()
+    queries.fetch_attributes("description", "backlinks", "revisions")
