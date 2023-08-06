@@ -478,7 +478,6 @@ def fetch_text_and_stats(queries):
 
                 results = s.get(url=url_full, params=params)
                 data = results.json()
-                print(data)
 
                 if "query" in data and \
                         "pages" in data["query"] and "extract" in data["query"]["pages"][str(page["pid"])]:
@@ -599,7 +598,7 @@ def main():
     queries = get_from_wikipedia(target_links, target_langs, target_contributors)
 
     import json
-    with open('results.json', 'w', encoding='utf-8') as f:
+    with open('webapp/samples/results.json', 'w', encoding='utf8') as f:
         json.dump(queries, f, ensure_ascii=False, indent=4)
 
 
