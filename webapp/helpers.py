@@ -18,6 +18,7 @@ def sizeof_fmt(num, suffix="B", sign=False):
         num /= 1024.0
     return f"{num:+.1f}Yi{suffix}" if sign else f"{num:.1f}Yi{suffix}"
 
+
 def humantime_fmt(t):
     if t < 60.0:
         return f"{t:2.0f}s"

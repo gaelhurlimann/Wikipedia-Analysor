@@ -144,7 +144,7 @@ def update_by_lang(selected_person, selected_langs):
                 dbc.CardBody(
                     [
                         html.A(html.H4(name, className="card-title"), href=link, target="_blank"),
-                        html.P("This is some placeholder text", className="card-text"),
+                        html.P(cur_data[lang]["description"] or "(no short description found)", className="card-text"),
                         html.Dl(
                             [
                                 html.Dt("Page creation"),

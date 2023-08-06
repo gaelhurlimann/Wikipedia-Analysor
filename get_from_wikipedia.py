@@ -197,6 +197,21 @@ def fetch_data(to_find, target_langs=None):
     if VERBOSE:
         qprint(queries)
 
+    # Dirty hack to get the short description don't judge me
+    for name, obj in queries.items():
+        if "error" in obj:
+            continue
+
+        for lang, page in obj["langs"].items():
+            data = s.get(url=f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{wiki_quote(page['name'])}?redirect=true").json()
+            if "description" in data:
+                page["description"] = data["description"]
+            else:
+                page["description"] = None
+
+    if VERBOSE:
+        qprint(queries)
+
     return queries
 
 
