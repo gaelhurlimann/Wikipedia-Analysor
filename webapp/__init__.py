@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from plotly import graph_objects as go, express as px
 
 from webapp.data import PEOPLE, DATA
-from webapp.helpers import LANGS, get_color, sizeof_fmt
+from webapp.helpers import LANGS, get_color, sizeof_fmt, map_score
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
@@ -111,31 +111,48 @@ def update_by_lang(selected_person, selected_langs):
         creation_user = cur_data[lang]['creation']['user']
         creation_user_link = f"https://{lang}.wikipedia.org/wiki/User:{creation_user}"
 
+        readability = []
+        for obj in cur_data[lang]["readability"].values():
+            readability.append(html.Dt(html.A(obj["name"], href=obj["link"], target="_blank")))
+            percent = map_score(obj["result"], obj["min"], obj["max"], 100, 0)  # min is harder to read
+            if percent < 50:
+                colour = "success"
+            elif percent > 75:
+                colour = "danger"
+            else:
+                colour = "warning"
+            hint = f"{'Lower' if obj['min'] < obj['max'] else 'Higher'} value means the article is easier to read (from {obj['min']} to {obj['max']})."
+            readability.append(html.Dd([
+                hint,
+                dbc.Progress(label=obj["result"], value=percent, color=colour),
+            ]))
+
         card = dbc.Card(
             [
                 dbc.CardHeader(f"{lang} - {LANGS[lang]}"),
                 dbc.CardBody(
                     [
-                        html.H4(name, className="card-title"),
+                        html.A(html.H4(name, className="card-title"), href=link, target="_blank"),
                         html.P("This is some placeholder text", className="card-text"),
                         html.Dl(
                             [
-                                html.Dt("Link"),
-                                html.Dd(html.A(link, href=link, target="_blank")),
-
                                 html.Dt("Page creation"),
-                                html.Dd(cur_data[lang]["creation"]["timestamp"]),
-
-                                html.Dt("Page creator"),
-                                html.Dd(html.A(creation_user, href=creation_user_link, target="_blank")),
+                                html.Dd(html.P([datetime.fromisoformat(cur_data[lang]['creation']['timestamp'].replace('Z', '+00:00')).strftime('%Y-%m-%d %H:%M'), ", by ", html.A(creation_user, href=creation_user_link, target='_blank')]),),
 
                                 html.Dt("Unique (named) contributors"),
                                 html.Dd(len(set(cur_data[lang]["contributors"]))),
 
                                 html.Dt("Unique (internal) backlinks"),
                                 html.Dd(len(set(cur_data[lang]["backlinks"]))),
-                            ],
-                        )
+
+                                html.Dt("Stats"),
+                                html.Dd([
+                                    cur_data[lang]["stats"]["num_words"], " words, ",
+                                    cur_data[lang]["stats"]["num_sentences"], " sentences, ",
+                                    "takes ", cur_data[lang]["stats"]["reading_time"], " seconds to read."
+                                ]),
+                            ] + readability,
+                        ),
                     ]
                 ),
             ],

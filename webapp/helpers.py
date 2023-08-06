@@ -21,3 +21,20 @@ def get_color(lang):
     m = hashlib.sha256()
     m.update(lang.encode())
     return f"#{m.hexdigest()[:6]}"
+
+
+def map_score(value, min_value, max_value, min_score=1, max_score=6):
+    """
+    Map a value from a range to another range.
+
+    :param value:
+    :param min_value:
+    :param max_value:
+    :param min_score:
+    :param max_score:
+    :return:
+    """
+    span_value = max_value - min_value
+    span_score = max_score - min_score
+    scaled_value = float(value - min_value) / float(span_value)
+    return min_score + (scaled_value * span_score)
