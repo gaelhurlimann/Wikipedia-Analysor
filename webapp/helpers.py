@@ -11,12 +11,18 @@ LANGS = {
 # https://stackoverflow.com/a/1094933
 def sizeof_fmt(num, suffix="B", sign=False):
     if abs(num) < 1024.0:
-        return f"{int(num):+}{suffix}" if sign else f"{int(num)}{suffix}"
+        return f"{num:+3.0f}{suffix}" if sign else f"{num:+3.0f}{suffix}"
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
             return f"{num:+3.1f}{unit}{suffix}" if sign else f"{num:3.1f}{unit}{suffix}"
         num /= 1024.0
     return f"{num:+.1f}Yi{suffix}" if sign else f"{num:.1f}Yi{suffix}"
+
+def humantime_fmt(t):
+    if t < 60.0:
+        return f"{t:2.0f}s"
+    elif t < 60.0 * 60.0:
+        return f"{t // 60:2.0f}min {t % 60:2.0f}s"
 
 
 def get_color(lang):

@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from plotly import graph_objects as go, express as px
 
 from webapp.data import PEOPLE, DATA
-from webapp.helpers import LANGS, get_color, sizeof_fmt, map_score
+from webapp.helpers import LANGS, get_color, sizeof_fmt, map_score, humantime_fmt
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container(
@@ -98,6 +98,9 @@ def update_by_lang(selected_person, selected_langs):
     """
     Add a row to contain language details, such as contributions, for each language selected.
     """
+    if "error" in DATA[selected_person]:
+        return []
+
     cur_data = DATA[selected_person]["langs"]
 
     if not isinstance(selected_langs, list):
@@ -111,17 +114,25 @@ def update_by_lang(selected_person, selected_langs):
         creation_user = cur_data[lang]['creation']['user']
         creation_user_link = f"https://{lang}.wikipedia.org/wiki/User:{creation_user}"
 
-        readability = []
+        readability = [
+            html.H5("Readability"),
+            html.Dt("Stats"),
+            html.Dd([
+                cur_data[lang]["stats"]["num_words"], " words, ",
+                cur_data[lang]["stats"]["num_sentences"], " sentences, ",
+                "takes ", humantime_fmt(cur_data[lang]["stats"]["reading_time"]), " to read."
+            ]),
+        ]
         for obj in cur_data[lang]["readability"].values():
             readability.append(html.Dt(html.A(obj["name"], href=obj["link"], target="_blank")))
-            percent = map_score(obj["result"], obj["min"], obj["max"], 100, 0)  # min is harder to read
-            if percent < 50:
-                colour = "success"
-            elif percent > 75:
+            percent = map_score(obj["result"], obj["min"], obj["max"], 0, 100)  # min is harder to read
+            if percent < 30:
                 colour = "danger"
+            elif percent > 60:
+                colour = "success"
             else:
                 colour = "warning"
-            hint = f"{'Lower' if obj['min'] < obj['max'] else 'Higher'} value means the article is easier to read (from {obj['min']} to {obj['max']})."
+            hint = f"{'Lower' if obj['min'] > obj['max'] else 'Higher'} value means the article is easier to read (from {obj['min']} to {obj['max']})."
             readability.append(html.Dd([
                 hint,
                 dbc.Progress(label=obj["result"], value=percent, color=colour),
@@ -144,13 +155,6 @@ def update_by_lang(selected_person, selected_langs):
 
                                 html.Dt("Unique (internal) backlinks"),
                                 html.Dd(len(set(cur_data[lang]["backlinks"]))),
-
-                                html.Dt("Stats"),
-                                html.Dd([
-                                    cur_data[lang]["stats"]["num_words"], " words, ",
-                                    cur_data[lang]["stats"]["num_sentences"], " sentences, ",
-                                    "takes ", cur_data[lang]["stats"]["reading_time"], " seconds to read."
-                                ]),
                             ] + readability,
                         ),
                     ]
@@ -248,10 +252,10 @@ def update_graph(selected_person, selected_langs):
     """
     Update the graph with one or multiple languages.
     """
-    cur_data = DATA[selected_person]["langs"]
-
-    if "error" in cur_data:
+    if "error" in DATA[selected_person]:
         return go.Figure(), {'display': 'none'}
+
+    cur_data = DATA[selected_person]["langs"]
 
     if not isinstance(selected_langs, list):
         selected_langs = [selected_langs]
@@ -279,7 +283,6 @@ def update_graph(selected_person, selected_langs):
     for lang in selected_langs:
         contributions = cur_data[lang]["contributions"]["items"]
         for contrib in contributions:
-            print(contrib["timestamp"])
             fig_main.add_vline(x=contrib["timestamp"], line_dash="dash", line_color=get_color(lang))
 
     fig_main.update_xaxes(
