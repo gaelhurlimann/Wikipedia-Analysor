@@ -5,6 +5,8 @@ import datetime
 import json
 from collections import Counter
 
+from textstat import textstat
+
 from readability import stats, flesch, flesch_kincaid, automated_readability_index, smog_grade, coleman_liau_index, \
     gunning_fog_index
 
@@ -497,23 +499,58 @@ def fetch_text_and_stats(queries):
                     break
 
             if "extract" in page and page["extract"]:
-                _, _, num_words, _, num_sentences = stats(page["extract"], lang)
+                # _, _, num_words, _, num_sentences = stats(page["extract"], lang)  # Legacy
                 page["stats"] = {
-                    "num_words": num_words,
-                    "num_sentences": num_sentences,
+                    "num_words": textstat.lexicon_count(page["extract"]),
+                    "num_sentences": textstat.sentence_count(page["extract"]),
+                    "reading_time": textstat.reading_time(page["extract"]),
                 }
+
+                # Using textstat
+                # Here, "min" means harder to read, while "max" means easier to read
+                # "minimum readability" vs. "maximum readability"
+                textstat.set_lang(lang)
                 page["readability"] = {
-                    "fres": flesch(page["extract"], lang),
-                    "fkgl": flesch_kincaid(page["extract"], lang),
-                    "ari": automated_readability_index(page["extract"], lang),
-                    "smog": smog_grade(page["extract"], lang),
-                    "cli": coleman_liau_index(page["extract"], lang),
-                    "gfi": gunning_fog_index(page["extract"], lang),
+                    "fres": {
+                        "name": "Flesch Reading Ease Score",
+                        "link": "https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch_reading_ease",
+                        "result": textstat.flesch_reading_ease(page["extract"]),
+                        "min": 0,
+                        "max": 100,
+                    }
                 }
-                mean = 0
-                for _, score in page["readability"].items():
-                    mean += score
-                page["readability"]["mean"] = mean / len(page["readability"])
+
+                if lang == "it":
+                    page["readability"]["it_gi"] = {
+                        "name": "Gulpease Index",
+                        "link": "https://it.wikipedia.org/wiki/Indice_Gulpease",
+                        "result": textstat.gulpease_index(page["extract"]),
+                        "min": 0,
+                        "max": 100,
+                    }
+
+                if lang == "de":
+                    page["readability"]["de_ws"] = {
+                        "name": "Wiener Sachtextformel",
+                        "link": "https://de.wikipedia.org/wiki/Lesbarkeitsindex#Wiener_Sachtextformel",
+                        "result": textstat.wiener_sachtextformel(page["extract"], 1),  # What are the variants?
+                        "min": 15,
+                        "max": 4,
+                    }
+
+                # Legacy
+                # page["readability"] = {
+                #     "fres": flesch(page["extract"], lang),
+                #     "fkgl": flesch_kincaid(page["extract"], lang),
+                #     "ari": automated_readability_index(page["extract"], lang),
+                #     "smog": smog_grade(page["extract"], lang),
+                #     "cli": coleman_liau_index(page["extract"], lang),
+                #     "gfi": gunning_fog_index(page["extract"], lang),
+                # }
+                # mean = 0
+                # for _, score in page["readability"].items():
+                #     mean += score
+                # page["readability"]["mean"] = mean / len(page["readability"])
 
     if VERBOSE:
         qprint(queries)

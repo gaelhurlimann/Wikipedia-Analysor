@@ -88,12 +88,17 @@ def stats(text, lang):
     """
     :return: num_char, num_syllables, num_words, num_poly, num_sentences
     """
-    num_char = len(text)
-    num_syllables = get_num_syllables(text, lang)
-    num_words = get_num_words(text)
-    num_poly = 0
-    num_sentences = get_num_sentences(text)
-    return num_char, num_syllables, num_words, num_poly, num_sentences
+    try:
+        num_char = len(text)
+        num_syllables = get_num_syllables(text, lang)
+        num_words = get_num_words(text)
+        num_poly = 0
+        num_sentences = get_num_sentences(text)
+        return num_char, num_syllables, num_words, num_poly, num_sentences
+    except LookupError:
+        import nltk
+        nltk.download('punkt')
+        return stats(text, lang)
 
 
 def flesch(text, lang, norm=True):
