@@ -161,16 +161,19 @@ def update_by_lang(selected_person, selected_langs):
 
         # Contributions table
         data = cur_data[lang]["contributions"]["items"]
+        data.reverse()
 
         try:
+            prev_size = None
             for d in data:
                 d.update(
                     {
                         "timestamp": datetime.fromisoformat(d["timestamp"].replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M"),
-                        "username": d["username"],
-                        "size": sizeof_fmt(d["size"]),
+                        "change": sizeof_fmt(d["size"] - prev_size if prev_size else 0, sign=True),
                     }
                 )
+                prev_size = d["size"]
+                d.update({"size": sizeof_fmt(d["size"])})
         except TypeError:  # Already done
             pass
 
@@ -182,6 +185,10 @@ def update_by_lang(selected_person, selected_langs):
             {
                 "name": "Username or IP address",
                 "id": "username",
+            },
+            {
+                "name": "Size change",
+                "id": "change",
             },
             {
                 "name": "Resulting size",
@@ -258,7 +265,6 @@ def update_graph(selected_person, selected_langs):
         fig_line.update_traces(line_color=get_color(lang))
 
         figs.append(fig_line)
-
     try:
         figs = iter(figs)
         figs_data = next(figs).data
@@ -269,6 +275,12 @@ def update_graph(selected_person, selected_langs):
         figs_data += fig.data
 
     fig_main = go.Figure(data=figs_data)
+
+    for lang in selected_langs:
+        contributions = cur_data[lang]["contributions"]["items"]
+        for contrib in contributions:
+            print(contrib["timestamp"])
+            fig_main.add_vline(x=contrib["timestamp"], line_dash="dash", line_color=get_color(lang))
 
     fig_main.update_xaxes(
         rangeslider_visible=True,
