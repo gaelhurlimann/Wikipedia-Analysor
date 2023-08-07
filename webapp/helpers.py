@@ -1,11 +1,7 @@
 import hashlib
 
-LANGS = {
-    "fr": "Français",
-    "en": "English",
-    "de": "Deutsch",
-    "it": "Italiano"
-}
+
+LANGS = {"fr": "Français", "en": "English", "de": "Deutsch", "it": "Italiano"}
 
 
 # https://stackoverflow.com/a/1094933

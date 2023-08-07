@@ -1,14 +1,12 @@
-import requests
-from urllib.parse import urlparse, unquote, quote
 from pprint import pprint
+from urllib.parse import quote, unquote, urlparse
 import datetime
 import json
-from collections import Counter
+
 
 from textstat import textstat
+import requests
 
-from readability import stats, flesch, flesch_kincaid, automated_readability_index, smog_grade, coleman_liau_index, \
-    gunning_fog_index
 
 # URLs
 URL_INFOS = "https://{lang}.wikipedia.org/w/api.php"
@@ -86,6 +84,9 @@ def links_to_find(target_links, target_langs=None):
 
     to_find = {}
     for link in target_links:
+        if link == "":
+            continue
+        link = link.replace('"', "").replace("'", "").replace(",", "")  # If copypasta from Python
         # If it's a link, extract lang and name
         if "wikipedia.org" in link:
             lang, name = extract_lang_name(link)
@@ -99,13 +100,14 @@ def links_to_find(target_links, target_langs=None):
             to_find["*"].add(link)
 
     # Each name without a lang will be tracked down using target langs
-    for name in to_find["*"]:
-        for lang in target_langs:
-            if lang not in to_find:
-                to_find[lang] = set()
-            to_find[lang].add(name)
+    if "*" in to_find:
+        for name in to_find["*"]:
+            for lang in target_langs:
+                if lang not in to_find:
+                    to_find[lang] = set()
+                to_find[lang].add(name)
 
-    del to_find["*"]
+        del to_find["*"]
 
     if VERBOSE:
         pprint(to_find)
@@ -152,11 +154,13 @@ def fetch_data(to_find, target_langs=None):
                 queries[title]["error"] = "not found"
                 continue
 
-            queries[title]["query"].update({
-                "pid": int(pid),
-                "timestamp": datetime.datetime.today().isoformat(),
-                "duration": TARGET_DURATION,
-            })
+            queries[title]["query"].update(
+                {
+                    "pid": int(pid),
+                    "timestamp": datetime.datetime.today().isoformat(),
+                    "duration": TARGET_DURATION,
+                }
+            )
 
             # Add the query language in the list of langs
             queries[title]["langs"] = {
@@ -169,9 +173,7 @@ def fetch_data(to_find, target_langs=None):
             if "langlinks" in obj:
                 for langlink in obj["langlinks"]:
                     if not target_langs or langlink["lang"] in target_langs:  # Use all langs if no target lang
-                        queries[title]["langs"][langlink["lang"]] = {
-                            "name": langlink["*"]
-                        }
+                        queries[title]["langs"][langlink["lang"]] = {"name": langlink["*"]}
 
     if VERBOSE:
         qprint(queries)
@@ -203,7 +205,9 @@ def fetch_data(to_find, target_langs=None):
             continue
 
         for lang, page in obj["langs"].items():
-            data = s.get(url=f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{wiki_quote(page['name'])}?redirect=true").json()
+            data = s.get(
+                url=f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{wiki_quote(page['name'])}?redirect=true"
+            ).json()
             if "description" in data:
                 page["description"] = data["description"]
             else:
@@ -382,8 +386,10 @@ def fetch_contributions(queries):
                 "prop": "revisions",
                 "rvprop": "timestamp|user|size",
                 "rvstart": obj["query"]["timestamp"],
-                "rvend": (datetime.datetime.fromisoformat(obj["query"]["timestamp"]) - datetime.timedelta(
-                    days=obj["query"]["duration"])).isoformat(),
+                "rvend": (
+                    datetime.datetime.fromisoformat(obj["query"]["timestamp"])
+                    - datetime.timedelta(days=obj["query"]["duration"])
+                ).isoformat(),
                 "rvdir": "older",  # rvstart has to be later than rvend with that mode
                 "rvlimit": WIKI_LIMIT,
             }
@@ -395,8 +401,11 @@ def fetch_contributions(queries):
                 results = s.get(url=url_full, params=params)
                 data = results.json()
 
-                if "query" in data and \
-                        "pages" in data["query"] and "revisions" in data["query"]["pages"][str(page["pid"])]:
+                if (
+                    "query" in data
+                    and "pages" in data["query"]
+                    and "revisions" in data["query"]["pages"][str(page["pid"])]
+                ):
                     rvdata = data["query"]["pages"][str(page["pid"])]["revisions"]
                 else:
                     obj["error"] = "could not retrieve information (contributions)"
@@ -409,11 +418,13 @@ def fetch_contributions(queries):
 
                 if rvdata:
                     for revision in rvdata:
-                        page["contributions"]["items"].append({
-                            "timestamp": revision["timestamp"],
-                            "username": revision["user"],
-                            "size": revision["size"],
-                        })
+                        page["contributions"]["items"].append(
+                            {
+                                "timestamp": revision["timestamp"],
+                                "username": revision["user"],
+                                "size": revision["size"],
+                            }
+                        )
 
                 if "continue" in data:
                     rvcontinue = data["continue"]["rvcontinue"]
@@ -440,9 +451,11 @@ def fetch_pageviews(queries):
                 agent=AGENTS,
                 uri_article_name=wiki_quote(page["name"]),
                 granularity=GRANULARITY,
-                start=(datetime.datetime.fromisoformat(obj["query"]["timestamp"]) - datetime.timedelta(
-                    days=obj["query"]["duration"])).strftime('%Y%m%d00'),
-                end=datetime.datetime.fromisoformat(obj["query"]["timestamp"]).strftime('%Y%m%d00'),
+                start=(
+                    datetime.datetime.fromisoformat(obj["query"]["timestamp"])
+                    - datetime.timedelta(days=obj["query"]["duration"])
+                ).strftime("%Y%m%d00"),
+                end=datetime.datetime.fromisoformat(obj["query"]["timestamp"]).strftime("%Y%m%d00"),
             )
 
             results = s.get(url=url_full)
@@ -458,10 +471,12 @@ def fetch_pageviews(queries):
                     }
 
                 for item in data["items"]:
-                    page["pageviews"]["items"].append({
-                        "timestamp": datetime.datetime.strptime(item["timestamp"], "%Y%m%d%H").isoformat(),
-                        "views": item["views"],
-                    })
+                    page["pageviews"]["items"].append(
+                        {
+                            "timestamp": datetime.datetime.strptime(item["timestamp"], "%Y%m%d%H").isoformat(),
+                            "views": item["views"],
+                        }
+                    )
             else:
                 obj["error"] = "could not retrieve information (pageviews)"
                 continue
@@ -494,8 +509,11 @@ def fetch_text_and_stats(queries):
                 results = s.get(url=url_full, params=params)
                 data = results.json()
 
-                if "query" in data and \
-                        "pages" in data["query"] and "extract" in data["query"]["pages"][str(page["pid"])]:
+                if (
+                    "query" in data
+                    and "pages" in data["query"]
+                    and "extract" in data["query"]["pages"][str(page["pid"])]
+                ):
                     exdata = data["query"]["pages"][str(page["pid"])]["extract"]
                 else:
                     obj["error"] = "could not retrieve information (extract)"
@@ -613,7 +631,8 @@ def main():
     queries = get_from_wikipedia(target_links, target_langs, target_contributors)
 
     import json
-    with open('webapp/samples/results.json', 'w', encoding='utf8') as f:
+
+    with open("webapp/samples/results.json", "w", encoding="utf8") as f:
         json.dump(queries, f, ensure_ascii=False, indent=4)
 
 
