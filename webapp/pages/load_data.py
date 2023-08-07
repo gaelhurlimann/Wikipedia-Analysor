@@ -18,12 +18,11 @@ layout = dbc.Container(
     [
         html.H2("Input your Wikipedia pages"),
         html.P("Can be either a full link, or a page name. One article per row."),
-        html.Hr(),
+        html.Br(),
         # Text input
         html.H3("Copy-paste your inputs"),
         dbc.Form(
             [
-                dbc.Label("Text input"),
                 dbc.Textarea(
                     id="input_text",
                     className="mb-3",
@@ -32,7 +31,7 @@ layout = dbc.Container(
                 dbc.Button("Submit", id="submit_text", color="primary"),
             ]
         ),
-        html.Hr(),
+        html.Br(),
         # File input
         html.H3("Or, upload a file"),
         dcc.Upload(
@@ -46,18 +45,16 @@ layout = dbc.Container(
                 "borderStyle": "dashed",
                 "borderRadius": "5px",
                 "textAlign": "center",
-                "margin": "10px",
             },
             # Allow multiple files to be uploaded
             multiple=False,
         ),
         html.Div(id="output-data-upload"),
-        html.Hr(),
+        html.Br(),
         # GSheet input
         html.H3("Or, provide a link to a Google Sheet"),
         dbc.Form(
             [
-                dbc.Label("Google Sheet input"),
                 dbc.Input(
                     id="input_gsheet",
                     className="mb-3",
