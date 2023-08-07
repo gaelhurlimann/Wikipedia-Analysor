@@ -16,7 +16,7 @@ app.layout = dbc.Container(
         dcc.Location(id="url", refresh=True),
         dcc.Download(id="download"),
         # Header
-        html.Center(html.H1("Wikipedia Analysor")),
+        html.Center(html.A(html.H1("Wikipedia Analysor"), href="/")),
         html.Hr(),
         dbc.Alert(
             children="",
