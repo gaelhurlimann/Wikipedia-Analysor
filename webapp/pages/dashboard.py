@@ -32,7 +32,7 @@ layout = dbc.Container(
                             value=DEFAULT_LANGS[0],
                             clearable=False,
                         ),
-                        html.P(id="debug"),
+                        html.Ol(id="debug"),
                         dcc.Graph(id="top-graph"),
                     ]
                 ),
@@ -98,7 +98,7 @@ def update_top5(selected_lang, data):
     figs = list()
     for top in tops:
         df = pd.read_json(json.dumps(top["pageviews_en"]))
-        fig_line = px.line(df, x="timestamp", y="views")
+        fig_line = px.line(df, x="timestamp", y="views", hover_name=len(top["pageviews_en"]) * [top["name"]])
         fig_line.update_traces(line_color=get_color(top["name"]))
         figs.append(fig_line)
 
@@ -118,5 +118,5 @@ def update_top5(selected_lang, data):
     return (
         fig,
         style,
-        ", ".join([f"{i + 1}: {top['name']}: {top['pageviews_total']} views" for i, top in enumerate(tops)]),
+        [html.Li(f"{top['name']}: {top['pageviews_total']} views") for top in tops],
     )
