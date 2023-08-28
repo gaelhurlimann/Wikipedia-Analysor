@@ -596,6 +596,31 @@ def fetch_text_and_stats(queries):
     return queries
 
 
+def fetch_page_assessments(queries):
+    for name, obj in queries.items():
+        if "error" in obj:
+            continue
+
+        for lang, page in obj["langs"].items():
+            url_full = URL_INFOS.format(lang=lang)
+            params = {
+                "titles": page["name"],
+                "prop": "pageassessments",
+            }
+
+            results = s.get(url=url_full, params=params)
+            data = results.json()
+
+            print(data)
+
+            if (
+                "query" in data
+                and "pages" in data["query"]
+                and "pageassessments" in data["query"]["pages"][str(page["pid"])]
+            ):
+                page["pageassessments"] = data["query"]["pages"][str(page["pid"])]["pageassessments"]
+
+
 def get_from_wikipedia(target_links, target_langs=None, target_contributors=None):
     if target_langs is None:
         target_langs = DEFAULT_LANGS
@@ -608,6 +633,7 @@ def get_from_wikipedia(target_links, target_langs=None, target_contributors=None
     fetch_contributions(queries)
     fetch_pageviews(queries)
     fetch_text_and_stats(queries)
+    fetch_page_assessments(queries)
 
     return queries
 

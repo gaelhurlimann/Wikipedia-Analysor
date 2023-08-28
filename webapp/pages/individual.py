@@ -127,6 +127,27 @@ def update_by_lang(selected_person, selected_langs, data):
         creation_user = cur_data[lang]["creation"]["user"]
         creation_user_link = f"https://{lang}.wikipedia.org/wiki/User:{creation_user}"
 
+        class_importance = [
+            html.H5(
+                html.A(
+                    "Class and importance",
+                    href="https://en.wikipedia.org/wiki/Wikipedia:Content_assessment",
+                    target="_blank",
+                )
+            ),
+        ]
+        if "pageassessments" in cur_data[lang]:
+            for category, obj in cur_data[lang]["pageassessments"].items():
+                class_importance.append(html.Dt(category))
+                cnt = []
+                if "class" in obj and obj["class"] != "":
+                    cnt.append(dbc.Badge(obj["class"], color=get_color(obj["class"])))
+                if "importance" in obj and obj["importance"] != "":
+                    cnt.append(dbc.Badge(obj["importance"], color=get_color(obj["importance"])))
+                class_importance.append(html.Dd(html.Span(cnt)))
+        else:
+            class_importance.append(html.P("Not available."))
+
         readability = [
             html.H5("Readability"),
             html.Dt("Stats"),
@@ -187,6 +208,7 @@ def update_by_lang(selected_person, selected_langs, data):
                                 html.Dt("Unique (internal) backlinks"),
                                 html.Dd(len(set(cur_data[lang]["backlinks"]))),
                             ]
+                            + class_importance
                             + readability,
                         ),
                     ]

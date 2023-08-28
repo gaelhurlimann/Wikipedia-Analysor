@@ -2,6 +2,22 @@ import hashlib
 
 
 LANGS = {"fr": "Français", "en": "English", "de": "Deutsch", "it": "Italiano"}
+QUALITY_IMPORTANCE_COLORS = {
+    "FA": "#9CBDFF",
+    "A": "#66FFFF",
+    "GA": "#66FF66",
+    "B": "#B2FF66",
+    "C": "#FFFF66",
+    "Start": "#FFAA66",
+    "Stub": "#FFA4A4",
+    "FL": "#9CBDFF",
+    "List": "#C7B1FF",
+    "Top": "#FF97FF",
+    "High": "#FFACFF",
+    "Mid": "#FFC1FF",
+    "Low": "#FFD6FF",
+    "NA": "#F5F5F5",
+}
 
 
 # https://stackoverflow.com/a/1094933
@@ -22,9 +38,15 @@ def humantime_fmt(t):
         return f"{t // 60:2.0f}min {t % 60:2.0f}s"
 
 
-def get_color(lang):
+def get_color(key):
+    if key == "":
+        return "#FFFFFF"
+
+    if key in QUALITY_IMPORTANCE_COLORS:
+        return QUALITY_IMPORTANCE_COLORS[key]
+
     m = hashlib.sha256()
-    m.update(lang.encode())
+    m.update(key.encode())
     return f"#{m.hexdigest()[:6]}"
 
 
@@ -43,6 +65,7 @@ def map_score(value, min_value, max_value, min_score=1, max_score=6):
     span_score = max_score - min_score
     scaled_value = float(value - min_value) / float(span_value)
     return min_score + (scaled_value * span_score)
+
 
 def create_main_fig(fig_main):
     fig_main.update_xaxes(
