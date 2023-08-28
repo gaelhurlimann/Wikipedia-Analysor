@@ -27,10 +27,10 @@ layout = dbc.Container([
                 value=DEFAULT_LANGS[0],
                 clearable=False,
             ),
+            html.P(id="debug"),
             dcc.Graph(
                 id="top-graph"
             ),
-            html.P(id="debug"),
         ]),
     ]),
 
@@ -49,7 +49,7 @@ layout = dbc.Container([
 @callback(
     Output("top-graph", "figure"),
     Output("top-graph", "style"),
-    # Output("top-names", "children"),
+    Output("debug", "children"),
     Input("top-langs", "value"),
     State("data", "data")
 )
@@ -64,7 +64,6 @@ def update_top5(selected_lang, data):
             if lang != selected_lang:
                 continue
 
-            print(f"current: {person}/{lang}")
             if len(tops) < 5:
                 tops.append({
                     "name": obj["name"],
@@ -81,6 +80,7 @@ def update_top5(selected_lang, data):
                     }
             tops = sorted(tops, key=lambda x: x["pageviews_total"])
 
+    tops = list(reversed(tops))
     figs = list()
     for top in tops:
         df = pd.read_json(json.dumps(top["pageviews_en"]))
@@ -101,4 +101,4 @@ def update_top5(selected_lang, data):
 
     fig, style = create_main_fig(fig_main)
 
-    return fig, style  #, [html.Li(f"{top['name']}: {top['pageviews_total']} views" for top in tops)]
+    return fig, style, ", ".join([f"{i+1}: {top['name']}: {top['pageviews_total']} views" for i, top in enumerate(tops)])
