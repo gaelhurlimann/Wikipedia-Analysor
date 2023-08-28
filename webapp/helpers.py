@@ -43,3 +43,20 @@ def map_score(value, min_value, max_value, min_score=1, max_score=6):
     span_score = max_score - min_score
     scaled_value = float(value - min_value) / float(span_value)
     return min_score + (scaled_value * span_score)
+
+def create_main_fig(fig_main):
+    fig_main.update_xaxes(
+        rangeslider_visible=True,
+        rangeselector=dict(
+            buttons=list(
+                [
+                    dict(count=1, label="1m", step="month", stepmode="backward"),
+                    dict(count=6, label="6m", step="month", stepmode="backward"),
+                    dict(count=1, label="YTD", step="year", stepmode="todate"),
+                    dict(count=1, label="1y", step="year", stepmode="backward"),
+                    dict(step="all"),
+                ]
+            )
+        ),
+    )
+    return fig_main, {"display": "inline"}

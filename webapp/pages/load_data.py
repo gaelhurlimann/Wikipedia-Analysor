@@ -141,7 +141,6 @@ def process_gsheet(n, value):
         else:
             res.encoding = res.apparent_encoding  # So that we get properly encoded results
             target_links = [link[0] for link in csv.reader(res.text.strip().split("\n"))]
-            print(target_links)
 
         queries = get_from_wikipedia(target_links)
         print("Done with processing gsheet")
@@ -160,18 +159,3 @@ def show_query(data):
         return json.dumps(data, indent=2, ensure_ascii=False), {"display": "inline"}
     else:
         return None, {"display": "none"}
-
-
-@callback(
-    Output("download", "data"),
-    Input("queries-dl", "n_clicks"),
-    Input("data", "data"),
-    prevent_initial_call=True,
-)
-def process_gsheet(n, data):
-    if n is not None:
-        return dict(
-            content=json.dumps(data, indent=2, ensure_ascii=False),
-            filename=f"queries_{'date'}.json",
-            type="application/json",
-        )

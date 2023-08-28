@@ -10,13 +10,14 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
-
+from webapp.helpers import get_color, humantime_fmt, LANGS, map_score, sizeof_fmt, create_main_fig
 
 dash.register_page(__name__)
 
 layout = dbc.Container(
     [
+        html.H2("", id="page_title"),
+
         # Dropdowns (person & lang)
         dbc.Row(
             [
@@ -45,7 +46,7 @@ layout = dbc.Container(
         dbc.Row(
             dbc.Col(
                 [
-                    html.H2(
+                    html.H3(
                         "Number of page views by language",
                         style={"margin-bottom": "1em"},
                     ),
@@ -56,7 +57,7 @@ layout = dbc.Container(
             ),
         ),
         # By language
-        html.H2(
+        html.H3(
             "Detail per language",
             style={"margin-bottom": "1em"},
         ),
@@ -80,6 +81,7 @@ def load_data(data):
 @callback(
     Output("langs", "options"),
     Output("langs", "value"),
+    Output("page_title", "children"),
     Input("person", "value"),
     State("data", "data"),
 )
@@ -87,10 +89,10 @@ def change_person(person, data):
     cur_data = data[person]
 
     if "error" in cur_data:
-        return [], ""
+        return [], "", f"Error with {person}"
     langs = list(cur_data["langs"])
 
-    return langs, langs[0]
+    return langs, langs[0], person
 
 
 @callback(
@@ -310,19 +312,4 @@ def update_graph(selected_person, selected_langs, data):
         for contrib in contributions:
             fig_main.add_vline(x=contrib["timestamp"], line_dash="dash", line_color=get_color(lang))
 
-    fig_main.update_xaxes(
-        rangeslider_visible=True,
-        rangeselector=dict(
-            buttons=list(
-                [
-                    dict(count=1, label="1m", step="month", stepmode="backward"),
-                    dict(count=6, label="6m", step="month", stepmode="backward"),
-                    dict(count=1, label="YTD", step="year", stepmode="todate"),
-                    dict(count=1, label="1y", step="year", stepmode="backward"),
-                    dict(step="all"),
-                ]
-            )
-        ),
-    )
-
-    return fig_main, {"display": "inline"}
+    return create_main_fig(fig_main)

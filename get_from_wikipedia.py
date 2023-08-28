@@ -34,7 +34,7 @@ ACCESS = "all-access"
 AGENTS = "all-agents"
 GRANULARITY = "daily"
 
-VERBOSE = True
+VERBOSE = False
 
 DEFAULT_LANGS = ["en", "fr", "de"]
 TARGET_DURATION = DEFAULT_DURATION
@@ -299,7 +299,10 @@ def fetch_pageprops_revisions(queries):
                 pid = next(iter(content))
                 page["pid"] = int(pid)
                 content = content[pid]
-                page["pwikidata"] = content["pageprops"]["wikibase_item"]
+                if "pageprops" in content and "wikibase_item" in content["pageprops"]:
+                    page["pwikidata"] = content["pageprops"]["wikibase_item"]
+                else:
+                    page["pwikidata"] = None
                 page["creation"] = {
                     "timestamp": content["revisions"][0]["timestamp"],
                     "user": content["revisions"][0]["user"],
@@ -470,6 +473,7 @@ def fetch_pageviews(queries):
                         "items": [],
                     }
 
+                total_views = 0
                 for item in data["items"]:
                     page["pageviews"]["items"].append(
                         {
@@ -477,6 +481,8 @@ def fetch_pageviews(queries):
                             "views": item["views"],
                         }
                     )
+                    total_views += item["views"]
+                page["pageviews_total"] = total_views
             else:
                 obj["error"] = "could not retrieve information (pageviews)"
                 continue
