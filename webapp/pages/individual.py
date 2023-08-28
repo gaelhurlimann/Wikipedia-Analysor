@@ -10,14 +10,14 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import get_color, humantime_fmt, LANGS, map_score, sizeof_fmt, create_main_fig
+from webapp.helpers import create_main_fig, get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
+
 
 dash.register_page(__name__)
 
 layout = dbc.Container(
     [
         html.H2("", id="page_title"),
-
         # Dropdowns (person & lang)
         dbc.Row(
             [
@@ -62,6 +62,12 @@ layout = dbc.Container(
             style={"margin-bottom": "1em"},
         ),
         html.Div(id="by-lang"),
+        html.Center(
+            [
+                html.A(dbc.Button("Global dashboard", size="lg", className="me-1"), href="dashboard"),
+                html.A(dbc.Button("Article dashboard", size="lg", className="me-1"), href="individual"),
+            ]
+        ),
     ],
     fluid="xl",
 )

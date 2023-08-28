@@ -1,49 +1,61 @@
 import json
 
+
+from dash import callback, dcc, html, Input, Output, State
+from plotly import express as px
+from plotly import graph_objects as go
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import html, dcc, callback, Input, Output, State
-from plotly import graph_objects as go
-from plotly import express as px
+
 
 from get_from_wikipedia import DEFAULT_LANGS
-from webapp.helpers import get_color, create_main_fig
+from webapp.helpers import create_main_fig, get_color
+
 
 dash.register_page(__name__)
 
-layout = dbc.Container([
-    html.H2("Dashboard"),
-    html.Br(),
-
-    dbc.Row([
-        html.H3("Top 5 pages"),
-        html.P("According to their number of page views."),
-        html.Ul([], id="top-names"),
-        dbc.Col([
-            dcc.Dropdown(
-                id="top-langs",
-                options=DEFAULT_LANGS,
-                value=DEFAULT_LANGS[0],
-                clearable=False,
-            ),
-            html.P(id="debug"),
-            dcc.Graph(
-                id="top-graph"
-            ),
-        ]),
-    ]),
-
-    # dbc.Row([
-    #     html.H3("Total page views"),
-    #     html.P("All the pages, all the languages."),
-    #     dbc.Col([
-    #         dcc.Graph(
-    #             id="total-graph"
-    #         )
-    #     ]),
-    # ]),
-])
+layout = dbc.Container(
+    [
+        html.H2("Dashboard"),
+        html.Br(),
+        dbc.Row(
+            [
+                html.H3("Top 5 pages"),
+                html.P("According to their number of page views."),
+                html.Ul([], id="top-names"),
+                dbc.Col(
+                    [
+                        dcc.Dropdown(
+                            id="top-langs",
+                            options=DEFAULT_LANGS,
+                            value=DEFAULT_LANGS[0],
+                            clearable=False,
+                        ),
+                        html.P(id="debug"),
+                        dcc.Graph(id="top-graph"),
+                    ]
+                ),
+            ]
+        ),
+        html.Center(
+            [
+                html.A(dbc.Button("Global dashboard", size="lg", className="me-1"), href="dashboard"),
+                html.A(dbc.Button("Article dashboard", size="lg", className="me-1"), href="individual"),
+            ]
+        ),
+        # dbc.Row([
+        #     html.H3("Total page views"),
+        #     html.P("All the pages, all the languages."),
+        #     dbc.Col([
+        #         dcc.Graph(
+        #             id="total-graph"
+        #         )
+        #     ]),
+        # ]),
+    ],
+    fluid="xl",
+)
 
 
 @callback(
@@ -51,7 +63,7 @@ layout = dbc.Container([
     Output("top-graph", "style"),
     Output("debug", "children"),
     Input("top-langs", "value"),
-    State("data", "data")
+    State("data", "data"),
 )
 def update_top5(selected_lang, data):
     tops = []
@@ -65,11 +77,13 @@ def update_top5(selected_lang, data):
                 continue
 
             if len(tops) < 5:
-                tops.append({
-                    "name": obj["name"],
-                    "pageviews_total": obj["pageviews_total"],
-                    "pageviews_en": obj["pageviews"]["items"],  # "timestamp", "views"
-                })
+                tops.append(
+                    {
+                        "name": obj["name"],
+                        "pageviews_total": obj["pageviews_total"],
+                        "pageviews_en": obj["pageviews"]["items"],  # "timestamp", "views"
+                    }
+                )
             else:
                 # If last object has less pageview, replace
                 if obj["pageviews_total"] > tops[-1]["pageviews_total"]:
@@ -92,7 +106,7 @@ def update_top5(selected_lang, data):
         figs = iter(figs)
         figs_data = next(figs).data
     except StopIteration:  # There is no data
-        return go.Figure(), {"display": "none"}  #, None
+        return go.Figure(), {"display": "none"}  # , None
 
     for fig in figs:
         figs_data += fig.data
@@ -101,4 +115,8 @@ def update_top5(selected_lang, data):
 
     fig, style = create_main_fig(fig_main)
 
-    return fig, style, ", ".join([f"{i+1}: {top['name']}: {top['pageviews_total']} views" for i, top in enumerate(tops)])
+    return (
+        fig,
+        style,
+        ", ".join([f"{i + 1}: {top['name']}: {top['pageviews_total']} views" for i, top in enumerate(tops)]),
+    )
