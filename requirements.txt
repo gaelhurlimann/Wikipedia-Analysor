@@ -15,3 +15,5 @@ nltk
 textstat~=0.7.3
 
 plotly~=5.14.1
+
+iso639==0.1.4

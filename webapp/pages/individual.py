@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import create_main_fig, get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
+from webapp.helpers import create_main_fig, get_color, get_lang_name, humantime_fmt, LANGS, map_score, sizeof_fmt
 
 
 dash.register_page(__name__)
@@ -320,7 +320,7 @@ def update_graph(selected_person, selected_langs, data):
         pageviews_en = cur_data[lang]["pageviews"]["items"]  # "timestamp", "views"
         df = pd.read_json(json.dumps(pageviews_en))
 
-        fig_line = px.line(df, x="timestamp", y="views")
+        fig_line = px.line(df, x="timestamp", y="views", hover_name=len(df) * [get_lang_name(lang)])
         fig_line.update_traces(line_color=get_color(lang))
 
         figs.append(fig_line)
