@@ -1,4 +1,5 @@
 from datetime import datetime
+import io
 import json
 
 
@@ -348,7 +349,7 @@ def update_graph(selected_person, selected_langs, data):
     figs = list()
     for lang in selected_langs:
         pageviews_en = cur_data[lang]["pageviews"]["items"]  # "timestamp", "views"
-        df = pd.read_json(json.dumps(pageviews_en))
+        df = pd.read_json(io.StringIO(json.dumps(pageviews_en)))
 
         fig_line = px.line(df, x="timestamp", y="views", hover_name=len(df) * [get_lang_name(lang)])
         fig_line.update_traces(line_color=get_color(lang))
