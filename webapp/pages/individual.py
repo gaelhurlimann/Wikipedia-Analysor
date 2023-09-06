@@ -10,6 +10,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
+from get_from_wikipedia import BACKLINKS_LIMIT, CONTRIBS_LIMIT
 from webapp.helpers import create_main_fig, get_color, get_lang_name, humantime_fmt, LANGS, map_score, sizeof_fmt
 
 
@@ -182,6 +183,8 @@ def update_by_lang(selected_person, selected_langs, data):
                 )
             )
 
+        len_contributors = len(set(cur_data[lang]["contributors"]))
+        len_backlinks = len(set(cur_data[lang]["backlinks"]))
         card = dbc.Card(
             [
                 dbc.CardHeader(f"{lang} - {LANGS[lang]}"),
@@ -204,11 +207,17 @@ def update_by_lang(selected_person, selected_langs, data):
                                     ),
                                 ),
                                 html.Dt("Unique (named) contributors"),
-                                html.Dd(len(set(cur_data[lang]["contributors"]))),
+                                html.Dd(
+                                    len_contributors
+                                    if len_contributors < CONTRIBS_LIMIT
+                                    else f"More than {CONTRIBS_LIMIT}"
+                                ),
                                 html.Dt("Unique (internal) backlinks"),
                                 html.Dd(
                                     html.A(
-                                        len(set(cur_data[lang]["backlinks"])),
+                                        len_backlinks
+                                        if len_backlinks < BACKLINKS_LIMIT
+                                        else f"More than {BACKLINKS_LIMIT}",
                                         href=f"https://en.wikipedia.org/wiki/Special:WhatLinksHere/{name.replace(' ', '_')}",
                                         target="_blank",
                                     )
