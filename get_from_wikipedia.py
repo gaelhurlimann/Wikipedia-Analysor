@@ -387,7 +387,7 @@ def fetch_contributions(queries):
             params = {
                 "titles": page["name"],
                 "prop": "revisions",
-                "rvprop": "timestamp|user|size",
+                "rvprop": "ids|timestamp|user|size",
                 "rvstart": obj["query"]["timestamp"],
                 "rvend": (
                     datetime.datetime.fromisoformat(obj["query"]["timestamp"])
@@ -423,6 +423,8 @@ def fetch_contributions(queries):
                     for revision in rvdata:
                         page["contributions"]["items"].append(
                             {
+                                "revid": revision["revid"],
+                                "parentid": revision["parentid"],
                                 "timestamp": revision["timestamp"],
                                 "username": revision["user"],
                                 "size": revision["size"],

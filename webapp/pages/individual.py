@@ -218,7 +218,7 @@ def update_by_lang(selected_person, selected_langs, data):
                                         len_backlinks
                                         if len_backlinks < BACKLINKS_LIMIT
                                         else f"More than {BACKLINKS_LIMIT}",
-                                        href=f"https://en.wikipedia.org/wiki/Special:WhatLinksHere/{name.replace(' ', '_')}",
+                                        href=f"https://{lang}.wikipedia.org/wiki/Special:WhatLinksHere/{name.replace(' ', '_')}",
                                         target="_blank",
                                     )
                                 ),
@@ -238,6 +238,7 @@ def update_by_lang(selected_person, selected_langs, data):
 
         try:
             prev_size = None
+            first_id = data[-1]["revid"]
             for d in data:
                 d.update(
                     {
@@ -249,6 +250,15 @@ def update_by_lang(selected_person, selected_langs, data):
                 )
                 prev_size = d["size"]
                 d.update({"size": sizeof_fmt(d["size"])})
+
+                # Diff link
+                actu = (
+                    f"[actu](https://{lang}.wikipedia.org/w/index.php?title={name.replace(' ', '_')}&diff={first_id}&oldid={d['revid']})"
+                    if first_id != d["revid"]
+                    else "actu"
+                )
+                diff = f"[diff](https://{lang}.wikipedia.org/w/index.php?title={name.replace(' ', '_')}&diff=prev&oldid={d['revid']})"
+                d.update({"links": f"({actu} | {diff})"})
         except TypeError:  # Already done
             pass
 
@@ -268,6 +278,11 @@ def update_by_lang(selected_person, selected_langs, data):
             {
                 "name": "Resulting size",
                 "id": "size",
+            },
+            {
+                "name": "",
+                "id": "links",
+                "presentation": "markdown",
             },
         ]
         table = dbc.Card(
