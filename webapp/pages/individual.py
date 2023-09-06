@@ -206,7 +206,13 @@ def update_by_lang(selected_person, selected_langs, data):
                                 html.Dt("Unique (named) contributors"),
                                 html.Dd(len(set(cur_data[lang]["contributors"]))),
                                 html.Dt("Unique (internal) backlinks"),
-                                html.Dd(len(set(cur_data[lang]["backlinks"]))),
+                                html.Dd(
+                                    html.A(
+                                        len(set(cur_data[lang]["backlinks"])),
+                                        href=f"https://en.wikipedia.org/wiki/Special:WhatLinksHere/{name.replace(' ', '_')}",
+                                        target="_blank",
+                                    )
+                                ),
                             ]
                             + class_importance
                             + readability,
