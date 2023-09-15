@@ -11,7 +11,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import create_main_fig, get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
+from webapp.helpers import create_main_fig, get_color, get_textcolor, humantime_fmt, LANGS, map_score, sizeof_fmt
 
 
 dash.register_page(__name__)
