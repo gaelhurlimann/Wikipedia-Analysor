@@ -1,4 +1,5 @@
 from datetime import datetime
+import io
 import json
 
 
@@ -10,7 +11,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import create_main_fig, get_color, get_textcolor, humantime_fmt, LANGS, map_score, sizeof_fmt
+from webapp.helpers import create_main_fig, get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
 
 
 dash.register_page(__name__)
@@ -183,6 +184,8 @@ def update_by_lang(selected_person, selected_langs, data):
                 )
             )
 
+        len_contributors = len(set(cur_data[lang]["contributors"]))
+        len_backlinks = len(set(cur_data[lang]["backlinks"]))
         card = dbc.Card(
             [
                 dbc.CardHeader(f"{lang} - {LANGS[lang]}"),
@@ -205,9 +208,21 @@ def update_by_lang(selected_person, selected_langs, data):
                                     ),
                                 ),
                                 html.Dt("Unique (named) contributors"),
-                                html.Dd(len(set(cur_data[lang]["contributors"]))),
+                                html.Dd(
+                                    len_contributors
+                                    if len_contributors < CONTRIBS_LIMIT
+                                    else f"More than {CONTRIBS_LIMIT}"
+                                ),
                                 html.Dt("Unique (internal) backlinks"),
-                                html.Dd(len(set(cur_data[lang]["backlinks"]))),
+                                html.Dd(
+                                    html.A(
+                                        len_backlinks
+                                        if len_backlinks < BACKLINKS_LIMIT
+                                        else f"More than {BACKLINKS_LIMIT}",
+                                        href=f"https://{lang}.wikipedia.org/wiki/Special:WhatLinksHere/{name.replace(' ', '_')}",
+                                        target="_blank",
+                                    )
+                                ),
                             ]
                             + class_importance
                             + readability,
@@ -224,6 +239,7 @@ def update_by_lang(selected_person, selected_langs, data):
 
         try:
             prev_size = None
+            first_id = data[-1]["revid"]
             for d in data:
                 d.update(
                     {
@@ -235,6 +251,15 @@ def update_by_lang(selected_person, selected_langs, data):
                 )
                 prev_size = d["size"]
                 d.update({"size": sizeof_fmt(d["size"])})
+
+                # Diff link
+                actu = (
+                    f"[actu](https://{lang}.wikipedia.org/w/index.php?title={name.replace(' ', '_')}&diff={first_id}&oldid={d['revid']})"
+                    if first_id != d["revid"]
+                    else "actu"
+                )
+                diff = f"[diff](https://{lang}.wikipedia.org/w/index.php?title={name.replace(' ', '_')}&diff=prev&oldid={d['revid']})"
+                d.update({"links": f"({actu} | {diff})"})
         except TypeError:  # Already done
             pass
 
@@ -254,6 +279,11 @@ def update_by_lang(selected_person, selected_langs, data):
             {
                 "name": "Resulting size",
                 "id": "size",
+            },
+            {
+                "name": "",
+                "id": "links",
+                "presentation": "markdown",
             },
         ]
         table = dbc.Card(
@@ -319,9 +349,9 @@ def update_graph(selected_person, selected_langs, data):
     figs = list()
     for lang in selected_langs:
         pageviews_en = cur_data[lang]["pageviews"]["items"]  # "timestamp", "views"
-        df = pd.read_json(json.dumps(pageviews_en))
+        df = pd.read_json(io.StringIO(json.dumps(pageviews_en)))
 
-        fig_line = px.line(df, x="timestamp", y="views")
+        fig_line = px.line(df, x="timestamp", y="views", hover_name=len(df) * [get_lang_name(lang)])
         fig_line.update_traces(line_color=get_color(lang))
 
         figs.append(fig_line)

@@ -1,6 +1,9 @@
 import hashlib
 
 
+import iso639
+
+
 LANGS = {"fr": "Français", "en": "English", "de": "Deutsch", "it": "Italiano"}
 QUALITY_IMPORTANCE_COLORS = {
     "FA": "#9CBDFF",
@@ -53,6 +56,17 @@ def humantime_fmt(t):
         return f"{t:2.0f}s"
     elif t < 60.0 * 60.0:
         return f"{t // 60:2.0f}min {t % 60:2.0f}s"
+
+
+def get_lang_name(code):
+    try:
+        name = iso639.to_name(code)
+        native = iso639.to_native(code)
+        name = f"{name}{f' ({native})' if native != name else ''}"
+
+        return name
+    except iso639.NonExistentLanguageError:  # Deprecated
+        return code
 
 
 def get_color(key):
