@@ -19,6 +19,23 @@ QUALITY_IMPORTANCE_COLORS = {
     "NA": "#F5F5F5",
 }
 
+# make sure text is readable when the "button" color is light/dark
+QI_TEXT_COLORS = {
+    "FA": "#acacac",
+    "A": "#acacac",
+    "GA": "#acacac",
+    "B": "#333333",
+    "C": "#333333",
+    "Start": "#acacac",
+    "Stub": "#acacac",
+    "FL": "#acacac",
+    "List": "#acacac",
+    "Top": "#333333",
+    "High": "#333333",
+    "Mid": "#333333",
+    "Low": "#333333",
+    "NA": "#333333",
+}
 
 # https://stackoverflow.com/a/1094933
 def sizeof_fmt(num, suffix="B", sign=False):
@@ -49,6 +66,16 @@ def get_color(key):
     m.update(key.encode())
     return f"#{m.hexdigest()[:6]}"
 
+def get_textcolor(key):
+    if key == "":
+        return "#FFFFFF"
+
+    if key in QI_TEXT_COLORS:
+        return QI_TEXT_COLORS[key]
+
+    m = hashlib.sha256()
+    m.update(key.encode())
+    return f"#{m.hexdigest()[:6]}"
 
 def map_score(value, min_value, max_value, min_score=1, max_score=6):
     """

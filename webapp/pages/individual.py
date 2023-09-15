@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 
-from webapp.helpers import create_main_fig, get_color, humantime_fmt, LANGS, map_score, sizeof_fmt
+from webapp.helpers import create_main_fig, get_color, get_textcolor, humantime_fmt, LANGS, map_score, sizeof_fmt
 
 
 dash.register_page(__name__)
@@ -136,12 +136,13 @@ def update_by_lang(selected_person, selected_langs, data):
                 )
             ),
         ]
+        # We have this to assure readability of the in the badge (no white text on yellow bkgnd)
         if "pageassessments" in cur_data[lang]:
             for category, obj in cur_data[lang]["pageassessments"].items():
                 class_importance.append(html.Dt(category))
                 cnt = []
                 if "class" in obj and obj["class"] != "":
-                    cnt.append(dbc.Badge(obj["class"], color=get_color(obj["class"])))
+                    cnt.append(dbc.Badge(obj["class"], color=get_color(obj["class"]), text_color=get_textcolor(obj["class"])))
                 if "importance" in obj and obj["importance"] != "":
                     cnt.append(dbc.Badge(obj["importance"], color=get_color(obj["importance"])))
                 class_importance.append(html.Dd(html.Span(cnt)))
